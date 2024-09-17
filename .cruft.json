@@ -1,0 +1,23 @@
+{
+  "template": "https://github.com/CybercentreCanada/assemblyline-service-template.git",
+  "commit": "c1defdda45a316710f63f43a1a5d41e04e4c5574",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "service_name": "zeek",
+      "__svc_name": "zeek",
+      "__repository": "assemblyline-service-zeek",
+      "__pkg_name": "zeek",
+      "__class_name": "Zeek",
+      "short_description": "This Assemblyline service uses Zeek to analyze PCAP files.",
+      "short_description_fr": "Ce service Assemblyline utilise Zeek pour analyser les fichiers PCAP.",
+      "stage": "CORE",
+      "category": "Networking",
+      "org_name_full": "CybercentreCanada",
+      "org_name_short": "cccs",
+      "license": "mit",
+      "_template": "https://github.com/CybercentreCanada/assemblyline-service-template.git"
+    }
+  },
+  "directory": null
+}
