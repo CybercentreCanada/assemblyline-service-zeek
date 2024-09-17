@@ -2,7 +2,7 @@
 [![](https://img.shields.io/discord/908084610158714900)](https://discord.gg/GUAy9wErNu)
 [![Static Badge](https://img.shields.io/badge/github-assemblyline-blue?logo=github)](https://github.com/CybercentreCanada/assemblyline)
 [![Static Badge](https://img.shields.io/badge/github-assemblyline\_service\_zeek-blue?logo=github)](https://github.com/CybercentreCanada/assemblyline-service-zeek)
-[![License](https://img.shields.io/github/license/CybercentreCanada/assemblyline-service-zeek)](./LICENSE.md)
+[![License](https://img.shields.io/github/license/CybercentreCanada/assemblyline-service-zeek)](./LICENSE)
 # Zeek Service
 
 This Assemblyline service uses Zeek to analyze PCAP files.
