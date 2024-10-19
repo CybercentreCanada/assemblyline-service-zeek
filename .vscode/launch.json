@@ -13,7 +13,7 @@
             "args": [
                 "-d",
                 "zeek.zeek.Zeek",
-                "${file}"
+                "/home/ryan/assemblyline-development-setup/services/assemblyline-service-zeek/222ebd7059c03c5a06a236ccf257c3f4d33af3b64f8a41b5b385ce6f6c5e8828.cart"
             ],
             "justMyCode": false,
         },

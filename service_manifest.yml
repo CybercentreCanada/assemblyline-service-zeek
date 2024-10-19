@@ -3,7 +3,7 @@ version: $SERVICE_TAG
 description: This Assemblyline service uses Zeek to analyze PCAP files.
 
 # Regex defining the types of files the service accepts and rejects
-accepts: .*
+accepts: network/.*
 rejects: empty
 
 # At which stage the service should run (one of FILTER, EXTRACT, CORE, SECONDARY, POST, REVIEW)
