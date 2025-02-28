@@ -16,7 +16,10 @@ RUN apt-get update && \
 RUN echo 'deb http://download.opensuse.org/repositories/security:/zeek/Debian_12/ /' | tee /etc/apt/sources.list.d/security:zeek.list
 RUN curl -fsSL https://download.opensuse.org/repositories/security:zeek/Debian_12/Release.key | gpg --dearmor | tee /etc/apt/trusted.gpg.d/security_zeek.gpg > /dev/null
 RUN apt update
-RUN apt install -y zeek-6.0
+RUN apt install -y zeek-7.0
+
+# Copy zeek configuration
+COPY ./zeek/config/init-default.zeek /opt/zeek/share/zeek/base/init-default.zeek
 
 # Install python dependencies
 USER assemblyline
