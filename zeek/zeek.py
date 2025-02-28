@@ -64,10 +64,11 @@ class Zeek(ServiceBase):
                         "request_uri": uri,
                         "request_method": log["method"],
                         "request_headers": {},
-                        "response_status_code": log["status_code"],
                         "response_headers": {},
                     }
 
+                    if "status_code" in log:
+                        http_details["response_status_code"] = log["status_code"]
                     if "resp_mime_types" in log:
                         http_details["response_content_mimetype"] = log["resp_mime_types"][0]
                     if "user_agent" in log:
@@ -126,5 +127,18 @@ class Zeek(ServiceBase):
                         else:
                             dns_section.add_tag("network.static.domain", answer)
             result.add_section(dns_section)
+
+        if "files.log" in log_files:
+            log_path = os.path.join(self.working_directory, "files.log")
+            # Add extracted files to result
+            with open(log_path) as f:
+                for log in f.read().splitlines():
+                    log = json.loads(log)
+
+                    request.add_extracted(
+                        path=os.path.join(self.working_directory, "extract_files", log["extracted"]),
+                        name=log["extracted"],
+                        description=f"Extracted file from {log['source']}",
+                    )
 
         request.result = result

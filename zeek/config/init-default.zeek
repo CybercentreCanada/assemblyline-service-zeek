@@ -73,6 +73,8 @@
 @load base/files/x509
 @load base/misc/find-filtered-trace
 
+@load policy/frameworks/files/extract-all-files.zeek
+
 ##! We do not need this file
 ##@load base/misc/find-checksum-offloading
 
