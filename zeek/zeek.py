@@ -2,13 +2,13 @@ import json
 import os
 import re
 import subprocess
+from hashlib import sha256
 
 from assemblyline.odm.base import IP_ONLY_REGEX
 from assemblyline.odm.models.ontology.results.network import NetworkConnection
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultTableSection, TableRow
-
 
 IP_REGEX = re.compile(IP_ONLY_REGEX)
 
@@ -132,15 +132,23 @@ class Zeek(ServiceBase):
 
         if "files.log" in log_files:
             log_path = os.path.join(self.working_directory, "files.log")
+            added_files = []
             # Add extracted files to result
             with open(log_path) as f:
                 for log in f.read().splitlines():
                     log = json.loads(log)
 
-                    request.add_extracted(
-                        path=os.path.join(self.working_directory, "extract_files", log["extracted"]),
-                        name=log["extracted"],
-                        description=f"Extracted file from {log['source']}",
-                    )
+                    filepath = os.path.join(self.working_directory, "extract_files", log["extracted"])
+                    with open(filepath, "rb") as extracted_file:
+                        file_sha256 = str(sha256(extracted_file.read()).digest())
+
+                    # Add file to result if it hasn't been added yet
+                    if file_sha256 not in added_files:
+                        added_files.append(file_sha256)
+                        request.add_extracted(
+                            path=filepath,
+                            name=log["extracted"],
+                            description=f"Extracted file from {log['source']}",
+                        )
 
         request.result = result
