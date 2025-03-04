@@ -48,6 +48,8 @@ class Zeek(ServiceBase):
             with open(log_path) as f:
                 for log in f.read().splitlines():
                     log = json.loads(log)
+                    if "host" not in log:
+                        log["host"] = log["id.resp_h"]
                     uri = f"http{'s' if log['id.resp_p'] == 443 else ''}://{log['host']}{log['uri']}"
                     http_section.add_row(
                         TableRow(
