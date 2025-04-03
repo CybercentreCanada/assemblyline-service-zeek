@@ -61,7 +61,7 @@ class Zeek(ServiceBase):
 
                     filepath = os.path.join(self.working_directory, "extract_files", log["extracted"])
                     with open(filepath, "rb") as extracted_file:
-                        file_sha256 = sha256(extracted_file.read()).digest().decode()
+                        file_sha256 = sha256(extracted_file.read()).hexdigest()
 
                     # Add file to result if it hasn't been added yet
                     if file_sha256 not in added_files:
