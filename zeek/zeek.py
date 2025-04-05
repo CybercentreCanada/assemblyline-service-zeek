@@ -55,9 +55,9 @@ class Zeek(ServiceBase):
                     }
                 )
             )
-        #Tag Section
-        table.add_tag("network.static.ip", log["id.orig_h"])
-        table.add_tag("network.static.ip", log["id.resp_h"])
+            #Tag Section
+            table.add_tag("network.static.ip", data["src"])
+            table.add_tag("network.static.ip", data["dst"])
 
 
     def execute(self, request: ServiceRequest):
