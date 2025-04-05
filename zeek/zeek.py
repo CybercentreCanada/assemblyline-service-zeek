@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 from hashlib import sha256
+from collections import defaultdict
 
 from assemblyline.odm.base import IP_ONLY_REGEX
 from assemblyline.odm.models.ontology.results.network import NetworkConnection
@@ -13,7 +14,6 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultSection, ResultTableSection, TableRow
 
 IP_REGEX = re.compile(IP_ONLY_REGEX)
-
 
 class DedupResultTableSection(ResultTableSection):
     """This class is used to generate a TableSection with de-duplicated rows."""
@@ -27,6 +27,38 @@ class DedupResultTableSection(ResultTableSection):
 
 class Zeek(ServiceBase):
     """This Assemblyline service class uses Zeek to analyze PCAP files."""
+
+    #creating a count of weird behaviour in pcap
+    def parse_weird_count(self, logs:list, table:DedupResultTableSection) -> None:
+        weird_table = defaultdict(lambda: {"count": 0})
+        for log in logs:
+            log = json.loads(log)
+            if "id.orig_h" not in log or "id.resp_h" not in log:
+                continue
+            src = f"{log['id.orig_h']}"
+            dst = f"{log['id.resp_h']}"
+            behaviour = log["name"]
+            weird_conn = sha256(f"{src}->{dst}:{behaviour}".encode()).hexdigest()
+            weird_table[weird_conn]["src"] = src
+            weird_table[weird_conn]["dst"] = dst
+            weird_table[weird_conn]["behaviour"] = behaviour
+            weird_table[weird_conn]["count"] +=1
+
+        for key,data in weird_table.items():
+            table.add_row(
+                TableRow(
+                    {
+                        "SRC": f"{data["src"]}",
+                        "DST": f"{data["dst"]}",
+                        "BEHAVIOUR": f"{data["behaviour"]}",
+                        "COUNT": f"{data["count"]}",
+                    }
+                )
+            )
+        #Tag Section
+        table.add_tag("network.static.ip", log["id.orig_h"])
+        table.add_tag("network.static.ip", log["id.resp_h"])
+
 
     def execute(self, request: ServiceRequest):
         """Run the service."""
@@ -167,5 +199,122 @@ class Zeek(ServiceBase):
                             dns_section.add_tag("network.static.ip", answer)
                         else:
                             dns_section.add_tag("network.static.domain", answer)
+
+        if "conn.log" in log_files:
+            log_path = os.path.join(self.working_directory, "conn.log")
+            tcp_section = None
+            udp_section = None
+            icmp_section = None
+            with open(log_path) as f:
+                for log in f.read().splitlines():
+                    log = json.loads(log)
+                    if "duration" not in log:
+                        log["duration"] = None
+                    if log["proto"] == "tcp":
+                        if tcp_section is None:
+                            tcp_section = DedupResultTableSection("TCP Conn Logs", parent=result)
+                        tcp_section.add_row(
+                            TableRow(
+                                {
+                                    "SRC": f"{log['id.orig_h']}:{log['id.orig_p']}",
+                                    "DST": f"{log['id.resp_h']}:{log['id.resp_p']}",
+                                    "DURATION": log["duration"],
+                                    "SRC_PKTS": log["orig_pkts"],
+                                    "DST_PKTS": log["resp_pkts"],
+                                }
+                            )
+                        )
+                        #Tag Section
+                        tcp_section.add_tag("network.static.ip", log["id.resp_h"])
+                    elif log["proto"] == "udp":
+                        if udp_section is None:
+                            udp_section = DedupResultTableSection("UDP Conn Logs", parent=result)
+                        udp_section.add_row(
+                            TableRow(
+                                {
+                                    "SRC": f"{log['id.orig_h']}:{log['id.orig_p']}",
+                                    "DST": f"{log['id.resp_h']}:{log['id.resp_p']}",
+                                    "DURATION": log["duration"],
+                                    "SRC_PKTS": log["orig_pkts"],
+                                    "DST_PKTS": log["resp_pkts"],
+                                }
+                            )
+                        )
+                        #Tag Section
+                        udp_section.add_tag("network.static.ip", log["id.resp_h"])
+                    elif log["proto"] == "icmp":
+                        if icmp_section is None:
+                            icmp_section = DedupResultTableSection("ICMP Conn Logs", parent=result)
+                        icmp_section.add_row(
+                            TableRow(
+                                {
+                                    "SRC": f"{log['id.orig_h']}:{log['id.orig_p']}",
+                                    "DST": f"{log['id.resp_h']}:{log['id.resp_p']}",
+                                    "SRC_PKTS": log["orig_pkts"],
+                                    "DST_PKTS": log["resp_pkts"],
+                                }
+                            )
+                        )
+                        #Tag Section
+                        icmp_section.add_tag("network.static.ip", log["id.resp_h"])
+
+
+
+        if "x509.log" in log_files:
+            log_path = os.path.join(self.working_directory, "x509.log")
+            x509_section = DedupResultTableSection("TLS Certs", parent=result)
+            with open(log_path) as f:
+                for log in f.read().splitlines():
+                    log = json.loads(log)
+                    x509_section.add_row(
+                        TableRow(
+                            {
+                                "CERT":         log["certificate.subject"],
+                                "ISSUER":       log["certificate.issuer"],
+                                "FINGERPRINT":  log["fingerprint"],
+                                "KEY ALG":      log["certificate.key_alg"],
+                                "LENGTH":       log["certificate.key_length"],
+                            }
+                        )
+                    )
+                    #Tag Section
+                    x509_section.add_tag("cert.issuer", log["certificate.issuer"])
+                    x509_section.add_tag("cert.subject", log["certificate.subject"])
+
+
+
+        if "weird.log" in log_files:
+            log_path = os.path.join(self.working_directory, "weird.log")
+            weird_section = DedupResultTableSection("Weird Log", parent=result)
+            with open(log_path) as f:
+                self.parse_weird_count(f.read().splitlines(),weird_section)
+
+        if "smtp.log" in log_files:
+            log_path = os.path.join(self.working_directory, "smtp.log")
+            smtp_section = DedupResultTableSection("SMTP Mail", parent=result)
+            with open(log_path) as f:
+                for log in f.read().splitlines():
+                    log = json.loads(log)
+                    if "mailfrom" not in log or "rcptto" not in log or "subject" not in log:
+                        continue
+                    smtp_section.add_row(
+                        TableRow(
+                            {
+                            "FROM": log["mailfrom"],
+                            "TO": log["rcptto"],
+                            "SUBJECT": log["subject"],
+                            "Date": log["date"],
+                            "MSG ID": log["msg_id"],
+                            }
+                        )
+                    )
+                    #Tag Section
+                    for receiver in log["rcptto"]:
+                        smtp_section.add_tag("network.email.address", receiver)
+                    smtp_section.add_tag("network.email.address", log["mailfrom"])
+                    smtp_section.add_tag("network.email.subject", log["subject"])
+                    smtp_section.add_tag("network.email.date", log["date"])
+                    smtp_section.add_tag("network.email.msg_id", log["msg_id"])
+                    smtp_section.add_tag("network.email.msg_id", log["msg_id"])
 
         request.result = result
