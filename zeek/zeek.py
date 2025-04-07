@@ -315,6 +315,5 @@ class Zeek(ServiceBase):
                     smtp_section.add_tag("network.email.subject", log["subject"])
                     smtp_section.add_tag("network.email.date", log["date"])
                     smtp_section.add_tag("network.email.msg_id", log["msg_id"])
-                    smtp_section.add_tag("network.email.msg_id", log["msg_id"])
 
         request.result = result
