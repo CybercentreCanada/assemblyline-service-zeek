@@ -48,10 +48,10 @@ class Zeek(ServiceBase):
             table.add_row(
                 TableRow(
                     {
-                        "SRC": f"{data["src"]}",
-                        "DST": f"{data["dst"]}",
-                        "BEHAVIOUR": f"{data["behaviour"]}",
-                        "COUNT": f"{data["count"]}",
+                        "SRC": f"{data['src']}",
+                        "DST": f"{data['dst']}",
+                        "BEHAVIOUR": f"{data['behaviour']}",
+                        "COUNT": f"{data['count']}",
                     }
                 )
             )
