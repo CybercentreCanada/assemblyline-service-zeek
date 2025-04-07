@@ -86,6 +86,10 @@ class Zeek(ServiceBase):
                     log = json.loads(log)
                     if "host" not in log:
                         log["host"] = log["id.resp_h"]
+                    if "uri" not in log: #Zeek can have a blank URI
+                        log["uri"] = "/"
+                    if "method" not in log: #You may only get a pcap with a response and can't leave a blank method
+                        log["method"] = "GET"
                     uri = f"http{'s' if log['id.resp_p'] == 443 else ''}://{log['host']}{log['uri']}"
                     http_section.add_row(
                         TableRow(
