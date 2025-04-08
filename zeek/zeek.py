@@ -4,8 +4,8 @@ import json
 import os
 import re
 import subprocess
-from hashlib import sha256
 from collections import defaultdict
+from hashlib import sha256
 
 from assemblyline.odm.base import IP_ONLY_REGEX
 from assemblyline.odm.models.ontology.results.network import NetworkConnection
@@ -28,8 +28,8 @@ class DedupResultTableSection(ResultTableSection):
 class Zeek(ServiceBase):
     """This Assemblyline service class uses Zeek to analyze PCAP files."""
 
-    #creating a count of weird behaviour in pcap
     def parse_weird_count(self, logs:list, table:DedupResultTableSection) -> None:
+        """Create a count of weird behaviour in PCAP."""
         weird_table = defaultdict(lambda: {"count": 0})
         for log in logs:
             log = json.loads(log)
@@ -78,8 +78,6 @@ class Zeek(ServiceBase):
                 name=log_file,
                 description=f"{log_file[:-4].upper()} logs from Zeek",
             )
-            with open(filepath, "r") as log:
-                self.ontology.add_other_part(log_file, {"encoding": "raw", "tool": "zeek", "content": log.read()})
 
         # Extracted files
         if "files.log" in log_files:
