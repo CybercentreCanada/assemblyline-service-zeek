@@ -15,6 +15,7 @@ from assemblyline_v4_service.common.result import Result, ResultSection, ResultT
 
 IP_REGEX = re.compile(IP_ONLY_REGEX)
 
+
 class DedupResultTableSection(ResultTableSection):
     """This class is used to generate a TableSection with de-duplicated rows."""
 
@@ -28,7 +29,7 @@ class DedupResultTableSection(ResultTableSection):
 class Zeek(ServiceBase):
     """This Assemblyline service class uses Zeek to analyze PCAP files."""
 
-    def parse_weird_count(self, logs:list, table:DedupResultTableSection) -> None:
+    def parse_weird_count(self, logs: list, table: DedupResultTableSection) -> None:
         """Create a count of weird behaviour in PCAP."""
         weird_table = defaultdict(lambda: {"count": 0})
         for log in logs:
@@ -42,9 +43,9 @@ class Zeek(ServiceBase):
             weird_table[weird_conn]["src"] = src
             weird_table[weird_conn]["dst"] = dst
             weird_table[weird_conn]["behaviour"] = behaviour
-            weird_table[weird_conn]["count"] +=1
+            weird_table[weird_conn]["count"] += 1
 
-        for key,data in weird_table.items():
+        for key, data in weird_table.items():
             table.add_row(
                 TableRow(
                     {
@@ -55,10 +56,9 @@ class Zeek(ServiceBase):
                     }
                 )
             )
-            #Tag Section
+            # Tag Section
             table.add_tag("network.static.ip", data["src"])
             table.add_tag("network.static.ip", data["dst"])
-
 
     def execute(self, request: ServiceRequest):
         """Run the service."""
@@ -68,6 +68,13 @@ class Zeek(ServiceBase):
         subprocess.run(
             ["/opt/zeek/bin/zeek", "-r", request.file_path, "LogAscii::use_json=T"], cwd=self.working_directory
         )
+
+        # Run again, but ignore checksums to see if there's any files to be extracted (parity with Suricata)
+        if os.path.exists(os.path.join(self.working_directory, "weird.log")):
+            subprocess.run(
+                ["/opt/zeek/bin/zeek", "-C", "-r", request.file_path, "LogAscii::use_json=T"],
+                cwd=self.working_directory,
+            )
 
         # Add all log files as supplementary files and include them in the ontology
         log_files = [file for file in os.listdir(self.working_directory) if file.endswith(".log")]
@@ -116,9 +123,9 @@ class Zeek(ServiceBase):
                     log = json.loads(log)
                     if "host" not in log:
                         log["host"] = log["id.resp_h"]
-                    if "uri" not in log: #Zeek can have a blank URI
+                    if "uri" not in log:  # Zeek can have a blank URI
                         log["uri"] = "/"
-                    if "method" not in log: #You may only get a pcap with a response and can't leave a blank method
+                    if "method" not in log:  # You may only get a pcap with a response and can't leave a blank method
                         log["method"] = "GET"
                     uri = f"http{'s' if log['id.resp_p'] == 443 else ''}://{log['host']}{log['uri']}"
                     http_section.add_row(
@@ -222,7 +229,7 @@ class Zeek(ServiceBase):
                                 }
                             )
                         )
-                        #Tag Section
+                        # Tag Section
                         tcp_section.add_tag("network.static.ip", log["id.resp_h"])
                     elif log["proto"] == "udp":
                         if udp_section is None:
@@ -238,7 +245,7 @@ class Zeek(ServiceBase):
                                 }
                             )
                         )
-                        #Tag Section
+                        # Tag Section
                         udp_section.add_tag("network.static.ip", log["id.resp_h"])
                     elif log["proto"] == "icmp":
                         if icmp_section is None:
@@ -253,10 +260,8 @@ class Zeek(ServiceBase):
                                 }
                             )
                         )
-                        #Tag Section
+                        # Tag Section
                         icmp_section.add_tag("network.static.ip", log["id.resp_h"])
-
-
 
         if "x509.log" in log_files:
             log_path = os.path.join(self.working_directory, "x509.log")
@@ -267,25 +272,23 @@ class Zeek(ServiceBase):
                     x509_section.add_row(
                         TableRow(
                             {
-                                "CERT":         log["certificate.subject"],
-                                "ISSUER":       log["certificate.issuer"],
-                                "FINGERPRINT":  log["fingerprint"],
-                                "KEY ALG":      log["certificate.key_alg"],
-                                "LENGTH":       log["certificate.key_length"],
+                                "CERT": log["certificate.subject"],
+                                "ISSUER": log["certificate.issuer"],
+                                "FINGERPRINT": log["fingerprint"],
+                                "KEY ALG": log["certificate.key_alg"],
+                                "LENGTH": log["certificate.key_length"],
                             }
                         )
                     )
-                    #Tag Section
+                    # Tag Section
                     x509_section.add_tag("cert.issuer", log["certificate.issuer"])
                     x509_section.add_tag("cert.subject", log["certificate.subject"])
-
-
 
         if "weird.log" in log_files:
             log_path = os.path.join(self.working_directory, "weird.log")
             weird_section = DedupResultTableSection("Weird Log", parent=result)
             with open(log_path) as f:
-                self.parse_weird_count(f.read().splitlines(),weird_section)
+                self.parse_weird_count(f.read().splitlines(), weird_section)
 
         if "smtp.log" in log_files:
             log_path = os.path.join(self.working_directory, "smtp.log")
@@ -298,15 +301,15 @@ class Zeek(ServiceBase):
                     smtp_section.add_row(
                         TableRow(
                             {
-                            "FROM": log["mailfrom"],
-                            "TO": log["rcptto"],
-                            "SUBJECT": log["subject"],
-                            "Date": log["date"],
-                            "MSG ID": log["msg_id"],
+                                "FROM": log["mailfrom"],
+                                "TO": log["rcptto"],
+                                "SUBJECT": log["subject"],
+                                "Date": log["date"],
+                                "MSG ID": log["msg_id"],
                             }
                         )
                     )
-                    #Tag Section
+                    # Tag Section
                     for receiver in log["rcptto"]:
                         smtp_section.add_tag("network.email.address", receiver)
                     smtp_section.add_tag("network.email.address", log["mailfrom"])
