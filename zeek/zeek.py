@@ -7,10 +7,11 @@ import subprocess
 from collections import defaultdict
 from hashlib import sha256
 
+from assemblyline.common.exceptions import RecoverableError
 from assemblyline.odm.base import IP_ONLY_REGEX
 from assemblyline.odm.models.ontology.results.network import NetworkConnection
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.request import ServiceRequest
+from assemblyline_v4_service.common.request import MaxExtractedExceeded, ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultSection, ResultTableSection, TableRow
 
 IP_REGEX = re.compile(IP_ONLY_REGEX)
@@ -102,17 +103,24 @@ class Zeek(ServiceBase):
 
                     # Add file to result if it hasn't been added yet
                     if file_sha256 not in added_files:
-                        added_files.append(file_sha256)
-                        filename = log["extracted"]
-                        request.add_extracted(
-                            path=filepath,
-                            name=filename,
-                            description=f"Extracted file from {log['source']}",
-                        )
+                        try:
+                            added_files.append(file_sha256)
+                            filename = log["extracted"]
+                            request.add_extracted(
+                                path=filepath,
+                                name=filename,
+                                description=f"Extracted file from {log['source']}",
+                            )
 
-                        file_extracted_section.add_line(filename)
-                        file_extracted_section.add_tag("file.name.extracted", filename)
-                        file_extracted_section.add_tag("file.name.extracted", file_sha256)
+                            file_extracted_section.add_line(filename)
+                            file_extracted_section.add_tag("file.name.extracted", filename)
+                            file_extracted_section.add_tag("file.name.extracted", file_sha256)
+                        except FileNotFoundError as file_not_found_error:
+                            # An intermittent issue, just try again
+                            raise RecoverableError(file_not_found_error) from file_not_found_error
+                        except MaxExtractedExceeded:
+                            # We've hit our limit
+                            pass
 
         # HTTP
         if "http.log" in log_files:
