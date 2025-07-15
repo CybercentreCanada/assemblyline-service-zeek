@@ -306,23 +306,24 @@ class Zeek(ServiceBase):
                     log = json.loads(log)
                     if "mailfrom" not in log or "rcptto" not in log or "subject" not in log:
                         continue
-                    smtp_section.add_row(
-                        TableRow(
-                            {
-                                "FROM": log["mailfrom"],
-                                "TO": log["rcptto"],
-                                "SUBJECT": log["subject"],
-                                "Date": log["date"],
-                                "MSG ID": log["msg_id"],
-                            }
-                        )
-                    )
+
+                    row_data = {
+                        "FROM": log["mailfrom"],
+                        "TO": log["rcptto"],
+                        "SUBJECT": log["subject"],
+                        "Date": log["date"],
+                    }
+
+                    if "msg_id" in log:
+                        row_data["MSG ID"] = log["msg_id"]
+                        smtp_section.add_tag("network.email.msg_id", log["msg_id"])
+
+                    smtp_section.add_row(TableRow(row_data))
                     # Tag Section
                     for receiver in log["rcptto"]:
                         smtp_section.add_tag("network.email.address", receiver)
                     smtp_section.add_tag("network.email.address", log["mailfrom"])
                     smtp_section.add_tag("network.email.subject", log["subject"])
                     smtp_section.add_tag("network.email.date", log["date"])
-                    smtp_section.add_tag("network.email.msg_id", log["msg_id"])
 
         request.result = result
