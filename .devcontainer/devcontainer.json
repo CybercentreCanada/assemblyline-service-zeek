@@ -11,6 +11,9 @@
 	"containerEnv": {
 		"SHELL": "/bin/bash"
 	},
+	"runArgs": [
+		"--network=host"
+	],
 	"postCreateCommand": "pip install -r tests/requirements.txt",
 	"customizations": {
 		"vscode": {
