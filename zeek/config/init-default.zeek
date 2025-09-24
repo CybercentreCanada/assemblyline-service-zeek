@@ -74,6 +74,7 @@
 @load base/misc/find-filtered-trace
 
 @load policy/frameworks/files/extract-all-files.zeek
+@load policy/protocols/conn/mac-logging
 
 ##! We do not need this file
 ##@load base/misc/find-checksum-offloading
@@ -123,7 +124,6 @@ redef record Conn::Info += {
                 payload: string;
         };
 
-        global proto : string;
         global source_ip : addr;
         global source_port :port;
         global dest_ip : addr;
@@ -182,7 +182,7 @@ event connection_state_remove(c:connection)
         c$conn$dst_port = c$id$resp_p ;
 
         local tmp_proto = fmt ("%s",c$id$orig_p);
-        proto = split_string(tmp_proto,/\//)[1];
+        local proto = split_string(tmp_proto,/\//)[1];
 
         if ( proto == "tcp")
                 {
