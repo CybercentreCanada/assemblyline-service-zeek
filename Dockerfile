@@ -19,6 +19,7 @@ RUN apt update && apt install -y zeek-8.0
 
 # Copy zeek configuration
 COPY ./zeek/config/init-default.zeek /opt/zeek/share/zeek/base/init-default.zeek
+ENV PATH="/opt/zeek/bin:${PATH}"
 
 # Install python dependencies
 USER assemblyline
