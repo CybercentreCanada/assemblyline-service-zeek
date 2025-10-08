@@ -70,13 +70,6 @@ class Zeek(ServiceBase):
             ["/opt/zeek/bin/zeek", "-r", request.file_path, "LogAscii::use_json=T"], cwd=self.working_directory
         )
 
-        # Run again, but ignore checksums to see if there's any files to be extracted (parity with Suricata)
-        if os.path.exists(os.path.join(self.working_directory, "weird.log")):
-            subprocess.run(
-                ["/opt/zeek/bin/zeek", "-C", "-r", request.file_path, "LogAscii::use_json=T"],
-                cwd=self.working_directory,
-            )
-
         # Add all log files as supplementary files and include them in the ontology
         log_files = [file for file in os.listdir(self.working_directory) if file.endswith(".log")]
         for log_file in log_files:

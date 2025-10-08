@@ -1,7 +1,7 @@
-##! Our version of /usr/share/bro/base/init-default.bro
+##! Our version of /usr/local/zeek/share/zeek/base/init-default.zeek
 
 ##! This script loads everything in the base/ script directory.  If you want
-##! to run Bro without all of these scripts loaded by default, you can use
+##! to run Zeek without all of these scripts loaded by default, you can use
 ##! the ``-b`` (``--bare-mode``) command line argument.  You can also copy the
 ##! "@load" lines from this script to your own script to load only the scripts
 ##! that you actually want.
@@ -42,6 +42,7 @@
 @load base/frameworks/reporter
 @load base/frameworks/sumstats
 @load base/frameworks/tunnels
+@load base/frameworks/files
 
 @load base/protocols/conn
 @load base/protocols/dhcp
@@ -136,7 +137,7 @@ redef record Conn::Info += {
 # This info will be saved in the conn logs, when the session is terminated.
 
 event tcp_packet(c: connection, is_orig: bool, flags: string, seq: count, ack: count, len: count, payload: string)
-   {
+{
 
         if (len > 0) {
 
@@ -174,8 +175,7 @@ event tcp_packet(c: connection, is_orig: bool, flags: string, seq: count, ack: c
 # We also add country, city GEO info and ASN for both source and destination.
 # This added info will also be saved in the conn.log.
 event connection_state_remove(c:connection)
-        {
-
+{
         c$conn$src_ip   = c$id$orig_h;
         c$conn$src_port = c$id$orig_p ;
         c$conn$dst_ip   = c$id$resp_h ;
@@ -185,8 +185,7 @@ event connection_state_remove(c:connection)
         local proto = split_string(tmp_proto,/\//)[1];
 
         if ( proto == "tcp")
-                {
-
+        {
                 local info_incoming : string;
                 local info_outgoing : string;
                 local tmp_0: string;
@@ -205,7 +204,7 @@ event connection_state_remove(c:connection)
                 info_outgoing = subst_string(tmp_1,"\/","_");
 
                 if (info_incoming in ack_table)
-                        {
+                {
                         c$conn$client_timestamp= ack_table[info_incoming]$timestamp;
                         c$conn$client_info= ack_table[info_incoming]$information;
                         c$conn$client_flags = ack_table[info_incoming]$flags;
@@ -213,9 +212,9 @@ event connection_state_remove(c:connection)
                         c$conn$client_ack = ack_table[info_incoming]$ack;
                         c$conn$client_len = ack_table[info_incoming]$len;
                         c$conn$client_payload = ack_table[info_incoming]$payload;
-                        }
+                }
                 if (info_outgoing in ack_table)
-                        {
+                {
                         c$conn$server_timestamp= ack_table[info_outgoing]$timestamp;
                         c$conn$server_info = ack_table[info_outgoing]$information;
                         c$conn$server_flags = ack_table[info_outgoing]$flags;
@@ -223,9 +222,37 @@ event connection_state_remove(c:connection)
                         c$conn$server_ack = ack_table[info_outgoing]$ack;
                         c$conn$server_len = ack_table[info_outgoing]$len;
                         c$conn$server_payload = ack_table[info_outgoing]$payload;
-                        }
                 }
         }
+}
+
+event file_sniff(f: fa_file, meta: fa_metadata)
+{
+        Files::add_analyzer(f, Files::ANALYZER_MD5);
+        Files::add_analyzer(f, Files::ANALYZER_SHA1);
+        Files::add_analyzer(f, Files::ANALYZER_SHA256);
+}
+
+event file_state_remove(f: fa_file)
+{
+        if ( !f$info?$extracted || !f$info?$sha256 )
+                return;
+
+        local sanitized_mime_type = "unknown-mimetype";
+        if ( f$info?$mime_type )
+                sanitized_mime_type = gsub(f$info$mime_type, /\//, "-");
+
+
+        local orig = fmt("%s%s", "extract_files/", f$info$extracted);
+        local dest = fmt("%s%s.%s.%s.%s", "extract_files/", f$info$sha256, f$source, f$last_active, sanitized_mime_type);
+        local cmd = fmt("mv %s %s", orig, dest);
+        local result = Exec::run([$cmd=cmd]);
+
+        f$info$extracted = dest;
+}
+
+redef ignore_checksums = T;
+
 ##! This was in the original script
 
 redef FilteredTraceDetection::enable = F;
