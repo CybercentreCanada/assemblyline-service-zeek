@@ -248,7 +248,8 @@ event file_state_remove(f: fa_file)
         local cmd = fmt("mv %s %s", orig, dest);
         local result = Exec::run([$cmd=cmd]);
 
-        f$info$extracted = dest;
+        local extracted_dest = fmt("%s.%s.%s.%s", f$info$sha256, f$source, f$last_active, sanitized_mime_type);
+        f$info$extracted = extracted_dest;
 }
 
 redef ignore_checksums = T;
