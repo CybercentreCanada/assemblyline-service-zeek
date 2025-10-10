@@ -245,11 +245,10 @@ event file_state_remove(f: fa_file)
 
         local orig = fmt("%s%s", "extract_files/", f$info$extracted);
         local dest = fmt("%s%s.%s.%s.%s", "extract_files/", f$info$sha256, f$source, f$last_active, sanitized_mime_type);
-        local cmd = fmt("mv %s %s", orig, dest);
-        local result = Exec::run([$cmd=cmd]);
-
         local extracted_dest = fmt("%s.%s.%s.%s", f$info$sha256, f$source, f$last_active, sanitized_mime_type);
-        f$info$extracted = extracted_dest;
+        if(rename(orig, dest)) {
+		f$info$extracted = extracted_dest;
+	}
 }
 
 redef ignore_checksums = T;
