@@ -58,8 +58,8 @@ class Zeek(ServiceBase):
                 )
             )
             # Tag Section
-            table.add_tag("network.static.ip", data["src"])
-            table.add_tag("network.static.ip", data["dst"])
+            table.add_tag("network.dynamic.ip", data["src"])
+            table.add_tag("network.dynamic.ip", data["dst"])
 
     def execute(self, request: ServiceRequest):
         """Run the service."""
@@ -170,11 +170,11 @@ class Zeek(ServiceBase):
                     )
 
                     # Tag section
-                    http_section.add_tag("network.static.ip", log["id.resp_h"])
-                    http_section.add_tag("network.static.uri", uri)
+                    http_section.add_tag("network.dynamic.ip", log["id.resp_h"])
+                    http_section.add_tag("network.dynamic.uri", uri)
                     if not log["host"].startswith(log["id.resp_h"]):
                         # Tag hostname if applicable
-                        http_section.add_tag("network.static.domain", log["host"])
+                        http_section.add_tag("network.dynamic.domain", log["host"])
 
         if "dns.log" in log_files:
             log_path = os.path.join(self.working_directory, "dns.log")
@@ -198,13 +198,13 @@ class Zeek(ServiceBase):
                     )
 
                     # Tag section
-                    dns_section.add_tag("network.static.ip", log["id.resp_h"])
-                    dns_section.add_tag("network.static.domain", log["query"])
+                    dns_section.add_tag("network.dynamic.ip", log["id.resp_h"])
+                    dns_section.add_tag("network.dynamic.domain", log["query"])
                     for answer in log.get("answers", []):
                         if IP_REGEX.match(answer):
-                            dns_section.add_tag("network.static.ip", answer)
+                            dns_section.add_tag("network.dynamic.ip", answer)
                         else:
-                            dns_section.add_tag("network.static.domain", answer)
+                            dns_section.add_tag("network.dynamic.domain", answer)
 
         if "conn.log" in log_files:
             log_path = os.path.join(self.working_directory, "conn.log")
@@ -231,7 +231,7 @@ class Zeek(ServiceBase):
                             )
                         )
                         # Tag Section
-                        tcp_section.add_tag("network.static.ip", log["id.resp_h"])
+                        tcp_section.add_tag("network.dynamic.ip", log["id.resp_h"])
                     elif log["proto"] == "udp":
                         if udp_section is None:
                             udp_section = DedupResultTableSection("UDP Conn Logs", parent=result)
@@ -247,7 +247,7 @@ class Zeek(ServiceBase):
                             )
                         )
                         # Tag Section
-                        udp_section.add_tag("network.static.ip", log["id.resp_h"])
+                        udp_section.add_tag("network.dynamic.ip", log["id.resp_h"])
                     elif log["proto"] == "icmp":
                         if icmp_section is None:
                             icmp_section = DedupResultTableSection("ICMP Conn Logs", parent=result)
@@ -262,7 +262,7 @@ class Zeek(ServiceBase):
                             )
                         )
                         # Tag Section
-                        icmp_section.add_tag("network.static.ip", log["id.resp_h"])
+                        icmp_section.add_tag("network.dynamic.ip", log["id.resp_h"])
 
         if "x509.log" in log_files:
             log_path = os.path.join(self.working_directory, "x509.log")
