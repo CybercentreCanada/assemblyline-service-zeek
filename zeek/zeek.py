@@ -192,7 +192,7 @@ class Zeek(ServiceBase):
 
                     answers = log.get("answers")
                     if answers:
-                        ns_section.add_tag("network.static.domain", log["query"])
+                        dns_section.add_tag("network.static.domain", log["query"])
                         for answer in answers:
                             if IP_REGEX.match(answer):
                                 dns_section.add_tag("network.static.ip", answer)
