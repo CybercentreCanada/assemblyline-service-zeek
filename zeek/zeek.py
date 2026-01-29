@@ -186,25 +186,32 @@ class Zeek(ServiceBase):
                     if "query" not in log:
                         continue
 
+                    
+                    # Tag section
+                    dns_section.add_tag("network.static.ip", log["id.resp_h"])
+
+                    answers = log.get("answers")
+                    if answers:
+                        ns_section.add_tag("network.static.domain", log["query"])
+                        for answer in answers:
+                            if IP_REGEX.match(answer):
+                                dns_section.add_tag("network.static.ip", answer)
+                            else:
+                                dns_section.add_tag("network.static.domain", answer)
+                    else:
+                        # Non-existent domain being queried
+                        answers = ["NXDOMAIN"]
+                    
                     dns_section.add_row(
                         TableRow(
                             {
                                 "SRC": f"{log['id.orig_h']}:{log['id.orig_p']}",
                                 "DST": f"{log['id.resp_h']}:{log['id.resp_p']}",
                                 "QUERY": log["query"],
-                                "ANSWER": log.get("answers", ["NXDOMAIN"]),
+                                "ANSWER": answers,
                             }
                         )
                     )
-
-                    # Tag section
-                    dns_section.add_tag("network.static.ip", log["id.resp_h"])
-                    dns_section.add_tag("network.static.domain", log["query"])
-                    for answer in log.get("answers", []):
-                        if IP_REGEX.match(answer):
-                            dns_section.add_tag("network.static.ip", answer)
-                        else:
-                            dns_section.add_tag("network.static.domain", answer)
 
         if "conn.log" in log_files:
             log_path = os.path.join(self.working_directory, "conn.log")
